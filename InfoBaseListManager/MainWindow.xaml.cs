@@ -19,6 +19,7 @@ namespace InfoBaseListManager
         private ICollectionView cvInfoBases;
 
         private ICollectionView cvInfoBaseCollections;
+        private ICollectionView cvStoredInfoBases;
 
         private InfoBaseListUdpServer _udpServer;
         private BackgroundTasks _backgroundTasks;        
@@ -156,9 +157,7 @@ namespace InfoBaseListManager
                 {
                     typeInfoBaseField.SetValue(ib, typeInfoBaseField.GetValue(ibCopy,null), null);                    
                 }
-                
-                SaveInfoBases();
-                cvInfoBases.Refresh();
+                                
                 return true;
             }
 
@@ -175,6 +174,8 @@ namespace InfoBaseListManager
             var selInfoBase = selInfoBaseTree.InfoBase;
 
             EditInfoBase(selInfoBase);
+            SaveInfoBases();
+            cvInfoBases.Refresh();
         }
         
         
@@ -202,7 +203,11 @@ namespace InfoBaseListManager
 
             selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
                        
-            if(!EditInfoBase(ib))
+            if(EditInfoBase(ib))
+            {
+                SaveInfoBases();
+                cvInfoBases.Refresh();
+            } else
             {
                 selUser.InfoBaseTree.ChildInfoBases.Remove(ibt);
             }
@@ -234,7 +239,19 @@ namespace InfoBaseListManager
 
         private void lbInfoBaseCollections_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            
+            var selInfoBaseCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (selInfoBaseCollection == null)
+            {
+                lbStoredInfoBases.ItemsSource = null;
+                return;
+            }
+
+
+            cvStoredInfoBases = CollectionViewSource.GetDefaultView(selInfoBaseCollection.InfoBaseList);
+            cvStoredInfoBases.SortDescriptions.Add(new SortDescription("InfobaseName", ListSortDirection.Ascending));
+            lbStoredInfoBases.ItemsSource = cvStoredInfoBases;
+
         }
 
         private void lbInfoBaseCollections_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -269,12 +286,86 @@ namespace InfoBaseListManager
         }
 
 #endregion
+        
+        #region stored_infobases
+
+        private void btnAddStoredInfoBase_Click(object sender, RoutedEventArgs e)
+        {
+            var selInfoBaseCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (selInfoBaseCollection == null)
+                return;
+
+            var ib = new InfoBaseListDataClasses.InfoBase();
+            ib.InfobaseName = "Информационная база";
+            ib.Connect = "Srvr=\"\";Ref=\"\";";
+            ib.App = "Auto";
+            ib.Version = "8.3";
+            ib.Folder = "/";
+            ib.WA = "1";
+
+            selInfoBaseCollection.InfoBaseList.Add(ib);
+            
+
+            if (EditInfoBase(ib))
+            {
+                Config.ConfigurationData.Save();
+                cvStoredInfoBases.Refresh();
+            } else
+            {
+                selInfoBaseCollection.InfoBaseList.Remove(ib);
+            } 
+        }
+
+        private void btnRemoveStoredInfoBase_Click(object sender, RoutedEventArgs e)
+        {
+            var selStoredInfoBase = (lbStoredInfoBases.SelectedItem as InfoBaseListDataClasses.InfoBase);
+
+            if (selStoredInfoBase == null)
+                return;
+
+            var selInfoBaseCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (selInfoBaseCollection == null)
+                return;
+
+            selInfoBaseCollection.InfoBaseList.Remove(selStoredInfoBase);
+            Config.ConfigurationData.Save();
+            cvStoredInfoBases.Refresh();
+
+        }
+
+
+        #endregion
+
+        private void lbStoredInfoBases_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var selStoredInfoBase = (lbStoredInfoBases.SelectedItem as InfoBaseListDataClasses.InfoBase);
+
+            if (selStoredInfoBase == null)
+                return;
+
+            if (EditInfoBase(selStoredInfoBase))
+            {
+                Config.ConfigurationData.Save();
+                cvStoredInfoBases.Refresh();
+            }            
+
+        }
+
+        private void Label_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            //if (((System.Windows.Controls.Label)sender).DataContext != lbStoredInfoBases.SelectedItem)
+            //    return;
+            DragDrop.DoDragDrop(lbStoredInfoBases, ((System.Windows.Controls.Label)sender).DataContext, DragDropEffects.Move);
+        }
 
         
 
-        
 
-        
+
+
+
 
     }
 }
