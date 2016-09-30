@@ -5,9 +5,17 @@
         xmlns:local="clr-namespace:InfoBaseListManager" Closed="Window_Closed" Closing="Window_Closing">
     
     <Window.Resources>
-        <local:LastTimeToBrushConverter x:Key="LastTimeToBrushConverter"/>    </Window.Resources>
-    <Grid>
-        
+        <local:LastTimeToBrushConverter x:Key="LastTimeToBrushConverter"/>
+        <Grid x:Key="PlusGrid">
+            <Rectangle Stretch="UniformToFill" Fill="Green" Height="3"></Rectangle>
+            <Rectangle Stretch="UniformToFill" Fill="Green" Width="3"></Rectangle>
+        </Grid>
+        <Grid x:Key="MinusGrid">
+            <Rectangle Stretch="UniformToFill" Fill="Red" Height="3"></Rectangle>
+        </Grid>
+    </Window.Resources>
+    
+    <Grid>        
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"></ColumnDefinition>
             <ColumnDefinition Width="1*"></ColumnDefinition>
@@ -67,6 +75,7 @@
                 </ListBox.ItemTemplate>
             </ListBox>
         </Grid>
+        
         <Grid Grid.Row ="1" Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"></RowDefinition>
@@ -76,6 +85,7 @@
                 <ColumnDefinition></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
+            
             <Label>Информационные базы:</Label>
 
             <TreeView Grid.Row="1" Name="tvInfobases" MouseDoubleClick="tvInfobases_MouseDoubleClick">                
@@ -85,7 +95,28 @@
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
-            <!--<ListBox Grid.Row="1" Name="lbInfobases" SelectionMode="Single">
+            
+            <ToolBarPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical">
+                <Button Name="btnAdd" Click="btnAdd_Click">Добавить</Button>
+                <Button Name="btnDelete" Click="btnDelete_Click">Удалить</Button>
+            </ToolBarPanel>
+        </Grid>
+
+        <Grid Grid.Row ="2" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            
+            <Label Grid.Row="0">Сохраненные списки:</Label>
+            
+            <ToolBarPanel Grid.Row="1" Orientation="Horizontal"> 
+                <Button Name="btnAddCollection" Width="21" Height="21" Padding="1" Margin="2" Content="{StaticResource PlusGrid}"/>
+                <Button Name="btnRemoveCollection" Width="21" Height="21" Padding="1" Margin="2" Content="{StaticResource MinusGrid }"/>                                   
+            </ToolBarPanel>
+            
+            <ListBox Grid.Row="2" Name="lbInfoBaseCollections" SelectionMode="Single" SelectionChanged="lbComps_SelectionChanged">
                 <ListBox.Resources>
                     <SolidColorBrush Color="LightGray" x:Key ="{x:Static SystemColors.HighlightBrushKey}">
                     </SolidColorBrush>
@@ -93,21 +124,14 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Path=InfobaseName}" FontWeight="Bold"/>
-                            <TextBlock Text=" ("/>
-                            <TextBlock Text="{Binding Path=Connect}"/>
-                            <TextBlock Text=")"/>
-                        </StackPanel>                        
-                    </DataTemplate>                   
+                            <Ellipse Width="8" Height="8" Fill="{Binding Path=IsOnline,Converter={StaticResource LastTimeToBrushConverter}}"/>
+                            <Label Content="{Binding Path=ComputerName}"/>
+                        </StackPanel>
+                    </DataTemplate>
                 </ListBox.ItemTemplate>
-            </ListBox>-->
-            <ToolBarPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical">
-                <Button Name="btnAdd" Click="btnAdd_Click">Добавить</Button>
-                <Button Name="btnDelete" Click="btnDelete_Click">Удалить</Button>
-            </ToolBarPanel>
-
+            </ListBox>
         </Grid>
-        
-        
+
+
     </Grid>
 </Window>

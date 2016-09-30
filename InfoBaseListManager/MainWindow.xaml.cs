@@ -39,10 +39,7 @@ namespace InfoBaseListManager
             }
             
             cbPoolList.ItemsSource = Config.ConfigurationData.PoolList;
-            stackConfig.DataContext = Config.ConfigurationData;
-
-            
-
+            stackConfig.DataContext = Config.ConfigurationData;           
             
         }
 
