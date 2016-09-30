@@ -14,14 +14,14 @@ namespace InfoBaseListManager
     public class InfoBaseCollection
     {
         private string name;
-        private List<InfoBase> infoBaseList;
+        private ObservableCollection<InfoBase> infoBaseList;
         
         public string Name { get { return name; } set { name = value; } }
-        public List<InfoBase> InfoBaseList { get {return infoBaseList;} set {infoBaseList = value; } }
+        public ObservableCollection<InfoBase> InfoBaseList { get { return infoBaseList; } set { infoBaseList = value; } }
 
         public InfoBaseCollection()
         {
-            infoBaseList = new List<InfoBase>();
+            infoBaseList = new ObservableCollection<InfoBase>();
         }
     }
     
@@ -29,14 +29,14 @@ namespace InfoBaseListManager
     public class Pool
     {
         private string name;
-        private List<InfoBaseCollection> infoBaseCollectionList;
+        private ObservableCollection<InfoBaseCollection> infoBaseCollectionList;
  
         public string Name { get { return name; } set { name = value; } }
-        public List<InfoBaseCollection> InfoBaseCollectionList { get { return infoBaseCollectionList; } set { infoBaseCollectionList = value; } }
+        public ObservableCollection<InfoBaseCollection> InfoBaseCollectionList { get { return infoBaseCollectionList; } set { infoBaseCollectionList = value; } }
 
         public Pool()
         {
-            infoBaseCollectionList = new List<InfoBaseCollection>();
+            infoBaseCollectionList = new ObservableCollection<InfoBaseCollection>();
         }
 
         public override string ToString()

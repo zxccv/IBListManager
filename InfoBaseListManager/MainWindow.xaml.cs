@@ -17,6 +17,9 @@ namespace InfoBaseListManager
         private ICollectionView cvComps;
         private ICollectionView cvUsers;
         private ICollectionView cvInfoBases;
+
+        private ICollectionView cvInfoBaseCollections;
+
         private InfoBaseListUdpServer _udpServer;
         private BackgroundTasks _backgroundTasks;        
         
@@ -55,6 +58,13 @@ namespace InfoBaseListManager
             selUser.PushInfoBases(_udpServer);
         }
 
+        private void btnSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var frmSettins = new SettingsForm();
+            frmSettins.ShowDialog();
+            cbPoolList.Items.Refresh();
+        }
+
         private void cbPoolList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Config.ConfigurationData.Save();
@@ -70,6 +80,10 @@ namespace InfoBaseListManager
             cvComps.SortDescriptions.Add(new SortDescription(null, ListSortDirection.Ascending));
             lbComps.ItemsSource = cvComps;
 
+            cvInfoBaseCollections = CollectionViewSource.GetDefaultView(Config.ConfigurationData.CurrentPool.InfoBaseCollectionList);
+            cvInfoBaseCollections.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+            lbInfoBaseCollections.ItemsSource = cvInfoBaseCollections;
+            
             lbUsers.ItemsSource = null;
             tvInfobases.ItemsSource = null;
 
@@ -77,6 +91,8 @@ namespace InfoBaseListManager
                 _backgroundTasks.Stop();
             _backgroundTasks = new BackgroundTasks(_udpServer, comps, cvComps);
             _backgroundTasks.Start();
+
+            
 
         }
 
@@ -161,12 +177,7 @@ namespace InfoBaseListManager
             EditInfoBase(selInfoBase);
         }
         
-        private void btnSettings_Click(object sender, RoutedEventArgs e)
-        {
-            var frmSettins = new SettingsForm();
-            frmSettins.ShowDialog();
-            cbPoolList.Items.Refresh();
-        }
+        
 
         
 
@@ -209,5 +220,61 @@ namespace InfoBaseListManager
             folder.ChildInfoBases.Remove(selInfoBaseTree);
             SaveInfoBases();
         }
+
+        
+
+#region InfoBaseCollection
+
+        private void EditCollectionName(InfoBaseCollection ibc)
+        {
+            ibc.Name = Microsoft.VisualBasic.Interaction.InputBox("Введите название списка:", "Список " + ibc.Name, ibc.Name);
+            cvInfoBaseCollections.Refresh();
+            Config.ConfigurationData.Save();
+        }
+
+        private void lbInfoBaseCollections_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            
+        }
+
+        private void lbInfoBaseCollections_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var selInfoBaseCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (selInfoBaseCollection == null)
+                return;
+
+            EditCollectionName(selInfoBaseCollection);
+        }
+
+        private void btnAddCollection_Click(object sender, RoutedEventArgs e)
+        {
+            var newCollection = new InfoBaseCollection();
+            newCollection.Name = "Новый список";
+
+            Config.ConfigurationData.CurrentPool.InfoBaseCollectionList.Add(newCollection);
+
+            EditCollectionName(newCollection);
+        }
+
+        private void btnRemoveCollection_Click(object sender, RoutedEventArgs e)
+        {
+            var selInfoBaseCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (selInfoBaseCollection == null)
+                return;
+
+            Config.ConfigurationData.CurrentPool.InfoBaseCollectionList.Remove(selInfoBaseCollection);
+            Config.ConfigurationData.Save();
+        }
+
+#endregion
+
+        
+
+        
+
+        
+
     }
 }

@@ -14,13 +14,13 @@ namespace TcpServerTest
     {                
         static void Main(string[] args)
         {
-            InfoBaseListManager.Config.ConfigurationData.Port = 22;
+            /*InfoBaseListManager.Config.ConfigurationData.Port = 22;
 
             var ib = new InfoBase();
             ib.InfobaseName = "sdgsdgsd";
 
             var ibc = new InfoBaseCollection();
-            ibc.InfoBaseList.Add(ib);
+            ibc.InfoBaseList.
 
             var pool = new Pool();
             pool.InfoBaseCollectionList.Add(ibc);
@@ -29,7 +29,7 @@ namespace TcpServerTest
             Config.ConfigurationData.PoolList.Add(pool);
 
 
-            Config.ConfigurationData.Save();
+            Config.ConfigurationData.Save();*/
 
             
         }
