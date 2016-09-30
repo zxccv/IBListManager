@@ -1,0 +1,1 @@
+InfoBaseListServiceInstaller.exe /u InfoBaseListService.exe

@@ -1,0 +1,1 @@
+InfoBaseListServiceInstaller.exe /i InfoBaseListService.exe <Сервер> <Порт>
