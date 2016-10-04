@@ -36,10 +36,14 @@ namespace InfoBaseListUDPServerNamespace
         private string _poolName;
         private readonly Thread _workThread;
         public UdpClient UdpClient;
+        public int Port 
+        {
+            get { return _port; }
+        }
 
         public Dictionary<string, ConnectedComputer> ConnectedComputers;
         public Queue SyncDataQueue;
-
+        
         private readonly Queue _syncSendQueue;
 
         private readonly Timer _sendTimer;
@@ -107,8 +111,6 @@ namespace InfoBaseListUDPServerNamespace
         {
             var ep = new IPEndPoint(IPAddress.Any, 0);
 
-            UdpClient = new UdpClient(_port) {Client = {ReceiveTimeout = 3000}};
-
             while (true)
             {
                 try
@@ -154,6 +156,9 @@ namespace InfoBaseListUDPServerNamespace
         {
             _port = port;
             _poolName = poolName;
+
+            UdpClient = new UdpClient(_port) { Client = { ReceiveTimeout = 3000 } };
+            
             if (!_workThread.IsAlive)
             {
                 _workThread.Start();

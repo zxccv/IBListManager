@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -63,21 +64,24 @@ namespace InfoBaseListManager
             selUser.PushInfoBases(_udpServer);
         }
 
-        private void btnSettings_Click(object sender, RoutedEventArgs e)
+        private void RestartServer()
         {
-            var frmSettins = new SettingsForm();
-            frmSettins.ShowDialog();
-            cbPoolList.Items.Refresh();
-        }
-
-        private void cbPoolList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            Config.ConfigurationData.Save();
-
             if (_udpServer != null)
                 _udpServer.Stop();
             _udpServer = new InfoBaseListUdpServer();
-            _udpServer.Start(Config.ConfigurationData.Port, Config.ConfigurationData.CurrentPool.Name);
+            try
+            {
+                _udpServer.Start(Config.ConfigurationData.Port, Config.ConfigurationData.CurrentPool.Name);
+            }
+            catch (Exception exception)
+            {
+                var socketE = exception as SocketException;
+                if (socketE != null)
+                {
+                    MessageBox.Show("При запуске UDP-сервера возникло исключение SocketException: " + socketE.SocketErrorCode.ToString() + " (" + socketE.Message + ")" + Environment.NewLine + "Проверьте не занят ли выбранный порт.", "Ошибка подключения к сети", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+
 
             _comps = new ObservableCollection<Computer>();
 
@@ -88,7 +92,7 @@ namespace InfoBaseListManager
             _cvInfoBaseCollections = CollectionViewSource.GetDefaultView(Config.ConfigurationData.CurrentPool.InfoBaseCollectionList);
             _cvInfoBaseCollections.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
             lbInfoBaseCollections.ItemsSource = _cvInfoBaseCollections;
-            
+
             lbUsers.ItemsSource = null;
             tvInfobases.ItemsSource = null;
 
@@ -96,9 +100,23 @@ namespace InfoBaseListManager
                 _backgroundTasks.Stop();
             _backgroundTasks = new BackgroundTasks(_udpServer, _comps, _cvComps);
             _backgroundTasks.Start();
+        }
 
-            
+        private void btnSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var frmSettins = new SettingsForm();
+            frmSettins.ShowDialog();
+            if (_udpServer.Port != Config.ConfigurationData.Port)
+            {
+                RestartServer();  
+            }
+            cbPoolList.Items.Refresh();
+        }
 
+        private void cbPoolList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Config.ConfigurationData.Save();
+            RestartServer();
         }
 
         private void Window_Closed(object sender, EventArgs e)
