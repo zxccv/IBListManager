@@ -137,8 +137,9 @@ namespace InfoBaseListService
                 if (!Directory.Exists(currentUser.UserAppFolder))
                     continue;
 
-                if (File.Exists(currentUser.UserAppFolder + @"\1C\1CEStart\ibases.v8i"))
-                    currentUser.UserInfoBasesFile = currentUser.UserAppFolder + @"\1C\1CEStart\ibases.v8i";
+                //Запоминаем путь даже если файла нет - походу создадим.
+                //if (File.Exists(currentUser.UserAppFolder + @"\1C\1CEStart\ibases.v8i"))
+                currentUser.UserInfoBasesFile = currentUser.UserAppFolder + @"\1C\1CEStart\ibases.v8i";
                 
                 _windowsUsers.Add(currentUser);
 
@@ -287,7 +288,12 @@ namespace InfoBaseListService
                     foundIndex = ibLinesList.Count - 1;
                 } 
 
-                ibLinesList[foundIndex] = typeInfoBaseField.Name + "=" + (string)typeInfoBaseField.GetValue(ib, null);                
+                //Костылёк. В поле External всегда пишем 0
+                if (!typeInfoBaseField.Name.Equals("External"))
+                    ibLinesList[foundIndex] = typeInfoBaseField.Name + "=" +
+                                              (string) typeInfoBaseField.GetValue(ib, null);
+                else
+                    ibLinesList[foundIndex] = typeInfoBaseField.Name + "=0";
             }
 
             if(first != -1)
@@ -334,13 +340,33 @@ namespace InfoBaseListService
 
         private void SaveInfoBasesToFile(string fileName,List<InfoBase> infoBaseList)
         {
-            if (!File.Exists(fileName))
-                throw new Exception("Файл с базами не найден");
+            //if (!File.Exists(fileName))
+            //    throw new Exception("Файл с базами не найден");
 
+            List<InfoBase> ibListFromFile;
+            string[] fileLines;
 
-            var ibListFromFile = LoadInfoBasesFromFile(fileName);
-            
-            var fileLines = File.ReadAllLines(fileName, Encoding.UTF8);
+            if(File.Exists(fileName))
+            { 
+                ibListFromFile = LoadInfoBasesFromFile(fileName);
+                fileLines = File.ReadAllLines(fileName, Encoding.UTF8);
+            }
+            else
+            {
+                //\1C\1CEStart\ibases.v8i
+                var dir1C = fileName.Substring(0, fileName.Length - 20);
+                // ReSharper disable once InconsistentNaming
+                var dir1CEStart = fileName.Substring(0, fileName.Length - 11);
+                
+                if (!Directory.Exists(dir1C))
+                    Directory.CreateDirectory(dir1C);
+
+                if (!Directory.Exists(dir1CEStart))
+                    Directory.CreateDirectory(dir1CEStart);
+
+                ibListFromFile = new List<InfoBase>();
+                fileLines = new string[0];
+            }
 
             var edited = false;
             foreach(var ib in infoBaseList)
@@ -380,7 +406,9 @@ namespace InfoBaseListService
         private List<InfoBase> LoadInfoBasesFromFile(string fileName)
         {
             if (!File.Exists(fileName))
-                throw new Exception("Файл с базами не найден");
+            {
+                return new List<InfoBase>();
+            }
 
             var fileLines = File.ReadAllLines(fileName, Encoding.UTF8);
 
