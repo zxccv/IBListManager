@@ -397,6 +397,16 @@ namespace InfoBaseListManager
                 DragDrop.DoDragDrop(tvInfobases, data, DragDropEffects.Move);
             }
         }
+
+        private void lbInfoBaseCollections_Label_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                var data = new DataObject(((Label)sender).DataContext);
+                data.SetData("Sender", lbInfoBaseCollections);
+                DragDrop.DoDragDrop(lbInfoBaseCollections, data, DragDropEffects.Move);
+            }
+        }
         
         private void lbStoredInfoBases_DragOver(object sender, DragEventArgs e)
         {
@@ -430,7 +440,9 @@ namespace InfoBaseListManager
 
             var selUser = (lbUsers.SelectedItem as User);
 
-            if (e.Data.GetDataPresent(typeof(InfoBase)) && selUser != null)
+            if (
+                (e.Data.GetDataPresent(typeof(InfoBase)) || e.Data.GetDataPresent(typeof(InfoBaseCollection)))
+                && selUser != null)
                 e.Effects = DragDropEffects.Move;
             else
                 e.Effects = DragDropEffects.None;
@@ -477,31 +489,101 @@ namespace InfoBaseListManager
                 return;
 
             var ib = e.Data.GetData(typeof(InfoBase)) as InfoBase;
+            var ibc = e.Data.GetData(typeof(InfoBaseCollection)) as InfoBaseCollection;
 
-            if (ib == null)
-                return;
-
-            if (ib.Connect == null || ib.Connect.Equals(""))
-                return;
-
-            var userInfoBases = selUser.InfoBaseTree.GetInfoBaseList();
-
-            foreach (var ibInCollection in userInfoBases)
+            if (ib != null)
             {
-                if (ibInCollection.InfobaseName.Equals(ib.InfobaseName, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    MessageBox.Show("Информационная база с таким наименованием уже существует", "Неверное имя базы",
-                            MessageBoxButton.OK);
+                if (ib.Connect == null || ib.Connect.Equals(""))
                     return;
+
+                var userInfoBases = selUser.InfoBaseTree.GetInfoBaseList();
+
+                foreach (var ibInCollection in userInfoBases)
+                {
+                    if (ibInCollection.InfobaseName.Equals(ib.InfobaseName, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        MessageBox.Show("Информационная база с таким наименованием уже существует", "Неверное имя базы",
+                            MessageBoxButton.OK);
+                        return;
+                    }
                 }
+
+                var ibt = new InfoBaseTree(new InfoBase(ib), selUser.InfoBaseTree);
+
+                selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
+
+                SaveInfoBases();
+                _cvInfoBases.Refresh();
             }
 
-            var ibt = new InfoBaseTree(new InfoBase(ib), selUser.InfoBaseTree);
+            if (ibc != null)
+            {
+                bool cleanList = false;
+                if(selUser.InfoBaseTree.ChildInfoBases.Count != 0)
+                { 
+                var res =
+                    MessageBox.Show(
+                        "Добавить список к имеющимся информационным базам? (Да - добавить, нет - удалить базы пользователя и добавить только базы из списка)",
+                        "Добавление/Замена", MessageBoxButton.YesNo);
+                    cleanList = (res == MessageBoxResult.No);
+                }
 
-            selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
+                
 
-            SaveInfoBases();
-            _cvInfoBases.Refresh(); 
+                if (cleanList)
+                {
+                    selUser.InfoBaseTree.ChildInfoBases.Clear();
+                }
+                else
+                {
+                    foreach (var ibToAdd in ibc.InfoBaseList)
+                    {
+                        if (ibToAdd.Connect == null || ibToAdd.Connect.Equals(""))
+                            continue;
+
+                        var userInfoBases = selUser.InfoBaseTree.GetInfoBaseList();
+
+                        foreach (var ibInCollection in userInfoBases)
+                        {
+                            if (ibInCollection.InfobaseName.Equals(ibToAdd.InfobaseName, StringComparison.CurrentCultureIgnoreCase)
+                                && !ibInCollection.Equals(ibToAdd))
+                            {
+                                MessageBox.Show("Информационная база с наименованием " + ibInCollection.InfobaseName + " в списке пользователя содержит другие настройки. Объединение невозможно.", "Неверное имя базы",
+                                    MessageBoxButton.OK);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                foreach (var ibToAdd in ibc.InfoBaseList)
+                {
+                    if (ibToAdd.Connect == null || ibToAdd.Connect.Equals(""))
+                        continue;
+
+                    var userInfoBases = selUser.InfoBaseTree.GetInfoBaseList();
+                    
+                    bool basePresentInList = false;
+                        
+                    foreach (var ibInCollection in userInfoBases)
+                    {
+                        if (ibInCollection.Equals(ibToAdd))
+                        {
+                            basePresentInList = true;
+                            break;
+                        }
+                    }
+
+                    if (!basePresentInList)
+                    {
+                        var ibt = new InfoBaseTree(new InfoBase(ibToAdd), selUser.InfoBaseTree);
+                        selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
+                    }
+                    
+                }
+                SaveInfoBases();
+                _cvInfoBases.Refresh();  
+            }
         }
 
 
