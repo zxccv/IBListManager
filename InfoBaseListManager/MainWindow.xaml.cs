@@ -81,8 +81,6 @@ namespace InfoBaseListManager
                     MessageBox.Show("При запуске UDP-сервера возникло исключение SocketException: " + socketE.SocketErrorCode.ToString() + " (" + socketE.Message + ")" + Environment.NewLine + "Проверьте не занят ли выбранный порт.", "Ошибка подключения к сети", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-
-
             _comps = new ObservableCollection<Computer>();
 
             _cvComps = CollectionViewSource.GetDefaultView(_comps);
