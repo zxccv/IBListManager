@@ -1,101 +1,99 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Windows;
-using InfoBaseListDataClasses;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using InfoBaseListDataClasses;
 
 namespace InfoBaseListManager
 {
     [Serializable]
     public class InfoBaseCollection
     {
-        private string name;
-        private ObservableCollection<InfoBase> infoBaseList;
+        private string _name;
+        private ObservableCollection<InfoBase> _infoBaseList;
         
-        public string Name { get { return name; } set { name = value; } }
-        public ObservableCollection<InfoBase> InfoBaseList { get { return infoBaseList; } set { infoBaseList = value; } }
+        public string Name { get { return _name; } set { _name = value; } }
+        public ObservableCollection<InfoBase> InfoBaseList { get { return _infoBaseList; } set { _infoBaseList = value; } }
 
         public InfoBaseCollection()
         {
-            infoBaseList = new ObservableCollection<InfoBase>();
+            _infoBaseList = new ObservableCollection<InfoBase>();
         }
     }
     
     [Serializable]
     public class Pool
     {
-        private string name;
-        private ObservableCollection<InfoBaseCollection> infoBaseCollectionList;
+        private string _name;
+        private ObservableCollection<InfoBaseCollection> _infoBaseCollectionList;
  
-        public string Name { get { return name; } set { name = value; } }
-        public ObservableCollection<InfoBaseCollection> InfoBaseCollectionList { get { return infoBaseCollectionList; } set { infoBaseCollectionList = value; } }
+        public string Name { get { return _name; } set { _name = value; } }
+        public ObservableCollection<InfoBaseCollection> InfoBaseCollectionList { get { return _infoBaseCollectionList; } set { _infoBaseCollectionList = value; } }
 
         public Pool()
         {
-            infoBaseCollectionList = new ObservableCollection<InfoBaseCollection>();
+            _infoBaseCollectionList = new ObservableCollection<InfoBaseCollection>();
         }
 
         public override string ToString()
         {
-            return name;
+            return _name;
         }
     }
 
     [Serializable]
     public class Config
     {
-        private static Config configurationData = new Config();
-        public static Config ConfigurationData { get { return configurationData; } }
+        // ReSharper disable once InconsistentNaming
+        private static readonly Config _configurationData = new Config();
+        public static Config ConfigurationData { get { return _configurationData; } }
         
         protected Config() 
         {
-            poolList = new List<Pool>();
+            _poolList = new List<Pool>();
             var cfg = Load();
             if(cfg != null)
             { 
-                port = cfg.Port;
-                poolList = cfg.PoolList;
-                currentPool = cfg.CurrentPool;
+                _port = cfg.Port;
+                _poolList = cfg.PoolList;
+                _currentPool = cfg.CurrentPool;
             }
         }
 
-        private const string fileName = "managerconfig.bin";
-        private int port;
-        private List<Pool> poolList;
-        private Pool currentPool;
+        private const string FileName = "managerconfig.bin";
+        private int _port;
+        private List<Pool> _poolList;
+        private Pool _currentPool;
         
-        public int Port { get { return port; } set { port = value; } }
+        public int Port { get { return _port; } set { _port = value; } }
         public List<Pool> PoolList
         {
-            get { return poolList; }
-            set { poolList = value; }
+            get { return _poolList; }
+            set { _poolList = value; }
         } 
         public Pool CurrentPool
         {
-            get { return currentPool; }
-            set { currentPool = value; }
+            get { return _currentPool; }
+            set { _currentPool = value; }
         }
         
         public void Save()
         {
-            Stream ConfigFileStream = File.Create(fileName);
+            Stream configFileStream = File.Create(FileName);
             BinaryFormatter serializer = new BinaryFormatter();
-            serializer.Serialize(ConfigFileStream, this);
-            ConfigFileStream.Close();    
+            serializer.Serialize(configFileStream, this);
+            configFileStream.Close();    
         }
 
         public Config Load()
         {
-            if (File.Exists(fileName))
+            if (File.Exists(FileName))
             {
-                Stream ConfigFileStream = File.OpenRead(fileName);
+                Stream configFileStream = File.OpenRead(FileName);
                 BinaryFormatter deserializer = new BinaryFormatter();
-                var cfg = (Config)deserializer.Deserialize(ConfigFileStream);
-                ConfigFileStream.Close();
+                var cfg = (Config)deserializer.Deserialize(configFileStream);
+                configFileStream.Close();
                 return cfg;
             }
 

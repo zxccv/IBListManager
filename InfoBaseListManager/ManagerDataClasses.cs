@@ -5,6 +5,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using InfoBaseListDataClasses;
+using InfoBaseListUDPServerNamespace;
+// ReSharper disable LoopCanBeConvertedToQuery
 
 namespace InfoBaseListManager
 {
@@ -15,6 +17,7 @@ namespace InfoBaseListManager
         public ObservableCollection<InfoBaseTree> ChildInfoBases {get; set;}
         public InfoBaseTree Folder { get; set; }     
  
+        // ReSharper disable once InconsistentNaming
         public string IBText { get { return InfoBase.InfobaseName; } }
                 
         public InfoBaseTree(InfoBase ib, InfoBaseTree folder)
@@ -65,6 +68,7 @@ namespace InfoBaseListManager
 
                 if (folder == null)
                 {
+                    // ReSharper disable once InconsistentNaming
                     var folderIB = ibList.SingleOrDefault(i => i.InfobaseName == folderName);
                     AddInfoBase(folderIB, ibList);
                     folder = Search(folderName);
@@ -90,8 +94,7 @@ namespace InfoBaseListManager
             if (infobases.SingleOrDefault(i => i.Equals(InfoBase)) == null) 
             {
                 toRemove.Add(Folder, this);
-                //Application.Current.Dispatcher.Invoke(new Action(() => Folder.ChildInfoBases.Remove(this)));                
-            };
+            }
 
         }
 
@@ -126,28 +129,19 @@ namespace InfoBaseListManager
             }
             return null;
         }
-
-        public void Sort()
-        {
-            ChildInfoBases.OrderBy(i => i.InfoBase.InfobaseName);
-
-            foreach (var child in ChildInfoBases)
-                child.Sort();
-        }
     }
 
     public class User : IComparable
     {
-        private string _computerName;
+        private readonly string _computerName;
         public string UserName { get; set; }
         public InfoBaseTree InfoBaseTree;
         
         public User(string computerName)
         {
             _computerName = computerName;
-            
-            var emptyInfoBase = new InfoBase();
-            emptyInfoBase.InfobaseName = "/";
+
+            var emptyInfoBase = new InfoBase {InfobaseName = "/"};
             InfoBaseTree.InfoBase = emptyInfoBase;            
         }
 
@@ -156,30 +150,29 @@ namespace InfoBaseListManager
             _computerName = computerName;
             UserName = uName;
 
-            var emptyInfoBase = new InfoBase();
-            emptyInfoBase.InfobaseName = "/";
+            var emptyInfoBase = new InfoBase {InfobaseName = "/"};
             InfoBaseTree = new InfoBaseTree(emptyInfoBase, null);            
         }
 
         public int CompareTo(Object o)
         {
-            if (o is User)
+            var user = o as User;
+            if (user != null)
             {
-                var u = o as User;
-                
-                return System.String.Compare(UserName, u.UserName, System.StringComparison.CurrentCultureIgnoreCase);
-
+                return String.Compare(UserName, user.UserName, StringComparison.CurrentCultureIgnoreCase);
             }
 
             return -1;
         }
 
-        public void QueryInfoBases(InfoBaseListUDPServerNamespace.InfoBaseListUdpServer udpServer)
+        public void QueryInfoBases(InfoBaseListUdpServer udpServer)
         {
-            DataUnitUserInfoBaseList duc = new DataUnitUserInfoBaseList();
-            duc.ComputerName = _computerName;
-            duc.UserName = UserName;
-            duc.Query = DataQueries.UserInfobaseListRequest;
+            DataUnitUserInfoBaseList duc = new DataUnitUserInfoBaseList
+            {
+                ComputerName = _computerName,
+                UserName = UserName,
+                Query = DataQueries.UserInfobaseListRequest
+            };
 
             udpServer.Send(duc.ComputerName, duc);
         }
@@ -196,23 +189,24 @@ namespace InfoBaseListManager
 
             foreach(var ibTree in toRemove)
             {
-                Application.Current.Dispatcher.Invoke(new Action(() => ibTree.Key.ChildInfoBases.Remove(ibTree.Value)));   
+                var tree = ibTree;
+                Application.Current.Dispatcher.Invoke(new Action(() => tree.Key.ChildInfoBases.Remove(tree.Value)));
             }
-
-            InfoBaseTree.Sort();
         }
 
-        public void PushInfoBases(InfoBaseListUDPServerNamespace.InfoBaseListUdpServer udpServer)
+        public void PushInfoBases(InfoBaseListUdpServer udpServer)
         {
             List<InfoBase> infoBaseList = new List<InfoBase>();
 
             InfoBaseTree.FillInfoBaseListRecursive(infoBaseList);
 
-            DataUnitUserInfoBaseList duc = new DataUnitUserInfoBaseList();
-            duc.ComputerName = _computerName;
-            duc.UserName = UserName;
-            duc.Query = DataQueries.UserInfobaseListPush;
-            duc.InfoBaseList = infoBaseList;
+            DataUnitUserInfoBaseList duc = new DataUnitUserInfoBaseList
+            {
+                ComputerName = _computerName,
+                UserName = UserName,
+                Query = DataQueries.UserInfobaseListPush,
+                InfoBaseList = infoBaseList
+            };
             udpServer.Send(duc.ComputerName, duc);
         }
 
@@ -244,13 +238,11 @@ namespace InfoBaseListManager
         
         public int CompareTo(Object o)
         {
-            if (o is Computer)
+            var computer = o as Computer;
+            if (computer != null)
             {
-                var c = o as Computer;
-
-                var dt = DateTime.Now;
                 var thisOnline = _isOnline;
-                var thatOnline = c.IsOnline;
+                var thatOnline = computer.IsOnline;
 
                 if (thisOnline && !thatOnline)
                     return 1;
@@ -258,18 +250,20 @@ namespace InfoBaseListManager
                 if (!thisOnline && thatOnline)
                     return -1;
 
-                return System.String.Compare(ComputerName, c.ComputerName, System.StringComparison.CurrentCultureIgnoreCase);
+                return string.Compare(ComputerName, computer.ComputerName, StringComparison.CurrentCultureIgnoreCase);
 
             }
 
             return -1;
         }
 
-        public void QueryUsers(InfoBaseListUDPServerNamespace.InfoBaseListUdpServer udpServer)
+        public void QueryUsers(InfoBaseListUdpServer udpServer)
         {
-            DataUnitComputer duc = new DataUnitComputer();
-            duc.ComputerName = ComputerName;
-            duc.Query = DataQueries.UserListRequest;
+            DataUnitComputer duc = new DataUnitComputer
+            {
+                ComputerName = ComputerName,
+                Query = DataQueries.UserListRequest
+            };
 
             udpServer.Send(duc.ComputerName, duc);
         }
@@ -282,7 +276,8 @@ namespace InfoBaseListManager
 
                 if (u == null)
                 {
-                    Application.Current.Dispatcher.Invoke(new Action(() => Users.Add(new User(ComputerName,userName))));
+                    var name = userName;
+                    Application.Current.Dispatcher.Invoke(new Action(() => Users.Add(new User(ComputerName,name))));
                 }
             }
 
@@ -294,9 +289,10 @@ namespace InfoBaseListManager
             }
 
             foreach(var user in toRemove)
-                Application.Current.Dispatcher.Invoke(new Action(() => Users.Remove(user)));
-
-            
+            {
+                var user1 = user;
+                Application.Current.Dispatcher.Invoke(new Action(() => Users.Remove(user1)));
+            }
         }
         
         public event PropertyChangedEventHandler PropertyChanged;

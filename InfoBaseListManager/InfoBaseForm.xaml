@@ -38,6 +38,7 @@
         <TextBox Grid.Column="1" Grid.Row="3" Name="tbApp" Text="{Binding Path=App}"></TextBox>
 
         <TextBlock Grid.Column="0" Grid.Row="4">Авторизация Windows:</TextBlock>
+        <!-- ReSharper disable once InconsistentNaming -->
         <TextBox Grid.Column="1" Grid.Row="4" Name="tbWA" Text="{Binding Path=WA}"></TextBox>
 
         <TextBlock Grid.Column="0" Grid.Row="5">Версия:</TextBlock>

@@ -1,11 +1,13 @@
-﻿namespace InfoBaseListService
+﻿using System.ComponentModel;
+
+namespace InfoBaseListService
 {
     partial class InfoBaseListService
     {
         /// <summary> 
         /// Требуется переменная конструктора.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Освободить все используемые ресурсы.

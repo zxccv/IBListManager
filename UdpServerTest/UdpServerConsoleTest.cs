@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using InfoBaseListUDPServerNamespace;
-using InfoBaseListDataClasses;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
 using System.Diagnostics;
+using System.Threading;
+using InfoBaseListDataClasses;
+using InfoBaseListUDPServerNamespace;
+
 
 namespace UdpServerTest
 {
     class UdpServerConsoleTest
     {
-        private static InfoBaseListUdpServer udpServer;
+        private static InfoBaseListUdpServer _udpServer;
         private static Dictionary<string, List<string>> _userLists;
         private static Dictionary<string, Dictionary<string, List<InfoBase>>> _userInfoBases;
         
@@ -21,21 +18,24 @@ namespace UdpServerTest
         {
             while (true)
             {
-                if (udpServer.SyncDataQueue.Count == 0)
+                if (_udpServer.SyncDataQueue.Count == 0)
                 {
                     Thread.Sleep(10);
                     continue;
                 }
 
-                DataUnitComputer duc = udpServer.SyncDataQueue.Dequeue() as DataUnitComputer;
+                DataUnitComputer duc = _udpServer.SyncDataQueue.Dequeue() as DataUnitComputer;
 
+                Debug.Assert(duc != null, "duc != null");
                 switch(duc.Query)
                 {
                     case DataQueries.Ping:
-                        var ducSend = new DataUnitComputer();
-                        ducSend.ComputerName = duc.ComputerName;
-                        ducSend.Query = DataQueries.Pong;
-                        udpServer.Send(duc.ComputerName,ducSend);
+                        var ducSend = new DataUnitComputer
+                        {
+                            ComputerName = duc.ComputerName,
+                            Query = DataQueries.Pong
+                        };
+                        _udpServer.Send(duc.ComputerName,ducSend);
                         break;
                     case DataQueries.UserListAnswer:
                         if (!(duc is DataUnitUserList))
@@ -50,7 +50,7 @@ namespace UdpServerTest
                         foreach (var username in duUserList.Users)
                         {
                             _userLists[duc.ComputerName].Add(username);
-                        };
+                        }
                         break;
                     case DataQueries.UserInfobaseListAnswer:
                         if (!(duc is DataUnitUserInfoBaseList))
@@ -71,20 +71,19 @@ namespace UdpServerTest
                         }
 
                         break;
-                    default:
-                        break;
                 }
 
             }
         }
 
+        // ReSharper disable once UnusedParameter.Local
         static void Main(string[] args)
         {            
-            udpServer = new InfoBaseListUdpServer();
+            _udpServer = new InfoBaseListUdpServer();
             _userLists = new Dictionary<string,List<string>>();
             _userInfoBases = new Dictionary<string, Dictionary<string, List<InfoBase>>>();
             
-            udpServer.Start(55300,"");
+            _udpServer.Start(55300,"");
 
             Thread th = new Thread(ParseQueue);
             th.Start();
@@ -96,19 +95,21 @@ namespace UdpServerTest
 
                 if(s=="u")
                 {
-                    foreach (var connComp in udpServer.ConnectedComputers)
+                    foreach (var connComp in _udpServer.ConnectedComputers)
                     {
-                        DataUnitComputer duc = new DataUnitComputer();
-                        duc.ComputerName = connComp.Key;
-                        duc.Query = DataQueries.UserListRequest;
-                        
-                        udpServer.Send(connComp.Key,duc);                        
+                        DataUnitComputer duc = new DataUnitComputer
+                        {
+                            ComputerName = connComp.Key,
+                            Query = DataQueries.UserListRequest
+                        };
+
+                        _udpServer.Send(connComp.Key,duc);                        
                     }
                 }
 
                 if (s == "b")
                 {
-                    foreach (var connComp in udpServer.ConnectedComputers)
+                    foreach (var connComp in _udpServer.ConnectedComputers)
                     {
                         if(!_userLists.ContainsKey(connComp.Key))
                             continue;
@@ -117,13 +118,15 @@ namespace UdpServerTest
                         
                         foreach(var username in _userLists[connComp.Key])
                         {
-                        
-                            DataUnitUserInfoBaseList duc = new DataUnitUserInfoBaseList();
-                            duc.ComputerName = connComp.Key;
-                            duc.Query = DataQueries.UserInfobaseListRequest;
-                            duc.UserName = username;
 
-                            udpServer.Send(connComp.Key, duc);
+                            DataUnitUserInfoBaseList duc = new DataUnitUserInfoBaseList
+                            {
+                                ComputerName = connComp.Key,
+                                Query = DataQueries.UserInfobaseListRequest,
+                                UserName = username
+                            };
+
+                            _udpServer.Send(connComp.Key, duc);
                         }                        
                     }
                 }
@@ -132,7 +135,7 @@ namespace UdpServerTest
                     break;
 
                 Console.Clear();
-                foreach (var connComp in udpServer.ConnectedComputers)
+                foreach (var connComp in _udpServer.ConnectedComputers)
                 {
                     Console.WriteLine("{0} - {1}",connComp.Value.ComputerName,connComp.Value.LastMessageTime);
                     if(_userLists.ContainsKey(connComp.Value.ComputerName))
@@ -155,7 +158,7 @@ namespace UdpServerTest
 
             //Console.ReadLine();
             th.Abort();
-            udpServer.Stop();
+            _udpServer.Stop();
 
         }
     }

@@ -1,1 +1,0 @@
-InfoBaseListServiceInstaller.exe /i InfoBaseListService.exe localhost 55300

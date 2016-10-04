@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.IO;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.ServiceProcess;
 using System.Threading;
@@ -15,6 +15,7 @@ namespace InfoBaseListService
         private string _host;
         private int _port;
         private string _poolName;
+        // ReSharper disable once NotAccessedField.Local
         private DateTime _lastMessageFromServerTime;
         private Timer _pingServerTimer;
         private ComputerData _computerData;
@@ -94,8 +95,10 @@ namespace InfoBaseListService
 
                     _syncQueue.Enqueue(newDataUnit);
                 }
-                catch (Exception) { };           
-
+                catch (Exception)
+                {
+                    // ignored
+                }
             }            
         }
 
@@ -113,12 +116,16 @@ namespace InfoBaseListService
 
                 DataUnitUserInfoBaseList du;
 
+                if (duc == null) continue;
+
                 switch (duc.Query)
                 {
                     case DataQueries.Ping:
-                        var ducSend = new DataUnitComputer();
-                        ducSend.ComputerName = duc.ComputerName;
-                        ducSend.Query = DataQueries.Pong;
+                        var ducSend = new DataUnitComputer
+                        {
+                            ComputerName = duc.ComputerName,
+                            Query = DataQueries.Pong
+                        };
                         Send(ducSend);
                         break;
                     case DataQueries.UserListRequest:
@@ -132,18 +139,17 @@ namespace InfoBaseListService
                         du = (DataUnitUserInfoBaseList)duc;
                         _computerData.SetUserInfoBases(du.UserName, du.InfoBaseList);
                         break;
-                    default:
-                        break;
                 }
-
             }
         }
                 
         private void PingServer(object obj)
         {
-            DataUnitComputer duc = new DataUnitComputer();
-            duc.ComputerName = Environment.MachineName;
-            duc.Query = DataQueries.Ping;
+            DataUnitComputer duc = new DataUnitComputer
+            {
+                ComputerName = Environment.MachineName,
+                Query = DataQueries.Ping
+            };
 
             Send(duc);            
         }

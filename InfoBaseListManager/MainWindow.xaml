@@ -81,10 +81,10 @@
 
             <Label>Информационные базы:</Label>
 
-            <TreeView Grid.Row="1" Name="tvInfobases" MouseDoubleClick="tvInfobases_MouseDoubleClick">
+            <TreeView Grid.Row="1" Grid.Column="0" Name="tvInfobases" MouseDoubleClick="tvInfobases_MouseDoubleClick" AllowDrop="True" Drop="tvInfobases_Drop" DragOver="tvInfobases_DragOver">
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Path=ChildInfoBases}">
-                        <TextBlock Text="{Binding Path=IBText}" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding Path=IBText}" FontWeight="Bold" MouseDown="TextBlock_MouseDown"/>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
@@ -154,14 +154,14 @@
                 </Button>
             </ToolBarPanel>
 
-            <ListBox Grid.Row="2" Name="lbStoredInfoBases" SelectionMode="Single" MouseDoubleClick="lbStoredInfoBases_MouseDoubleClick">
+            <ListBox Grid.Row="2" Name="lbStoredInfoBases" SelectionMode="Single" MouseDoubleClick="lbStoredInfoBases_MouseDoubleClick" Drop="lbStoredInfoBases_Drop" AllowDrop="True" DragOver="lbStoredInfoBases_DragOver">
                 <ListBox.Resources>
                     <SolidColorBrush Color="LightGray" x:Key ="{x:Static SystemColors.HighlightBrushKey}">
                     </SolidColorBrush>
                 </ListBox.Resources>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Label MouseDown="Label_MouseDown" Content="{Binding Path=InfobaseName}"/>
+                        <Label MouseMove="lbStoredInfoBases_Label_MouseMove"  Content="{Binding Path=InfobaseName}"/>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

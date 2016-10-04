@@ -1,22 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace InfoBaseListManager
 {
     /// <summary>
     /// Логика взаимодействия для SettingsForm.xaml
     /// </summary>
-    public partial class SettingsForm : Window
+    public partial class SettingsForm
     {
         public SettingsForm()
         {
@@ -53,7 +44,7 @@ namespace InfoBaseListManager
 
         }
                 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, CancelEventArgs e)
         {
             if(Config.ConfigurationData.Port == 0)
             {
@@ -66,11 +57,8 @@ namespace InfoBaseListManager
 
         private void tbPoolName_GotFocus(object sender, RoutedEventArgs e)
         {
-            lbPoolList.SelectedItem = (sender as TextBox).DataContext;
+            var textBox = sender as TextBox;
+            if (textBox != null) lbPoolList.SelectedItem = textBox.DataContext;
         }
-
-        
-
- 
     }
 }

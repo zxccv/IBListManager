@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace InfoBaseListDataClasses
 {
@@ -22,7 +21,7 @@ namespace InfoBaseListDataClasses
     public class DataUnitQuery
     {
         public DataQueries Query;
-        public string Id;
+        public string ID;
         public string PoolName;
     }
 

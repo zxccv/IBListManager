@@ -1,11 +1,15 @@
-﻿namespace InfoBaseListService
+﻿using System.ComponentModel;
+using System.Configuration.Install;
+using System.ServiceProcess;
+
+namespace InfoBaseListService
 {
     partial class ProjectInstaller
     {
         /// <summary>
         /// Требуется переменная конструктора.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary> 
         /// Освободить все используемые ресурсы.
@@ -28,12 +32,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.serviceProcessInstaller1 = new System.ServiceProcess.ServiceProcessInstaller();
-            this.serviceInstaller1 = new System.ServiceProcess.ServiceInstaller();
+            this.serviceProcessInstaller1 = new ServiceProcessInstaller();
+            this.serviceInstaller1 = new ServiceInstaller();
             // 
             // serviceProcessInstaller1
             // 
-            this.serviceProcessInstaller1.Account = System.ServiceProcess.ServiceAccount.LocalSystem;
+            this.serviceProcessInstaller1.Account = ServiceAccount.LocalSystem;
             this.serviceProcessInstaller1.Password = null;
             this.serviceProcessInstaller1.Username = null;
             // 
@@ -41,11 +45,11 @@
             // 
             this.serviceInstaller1.DisplayName = "Служба управления списком баз 1С";
             this.serviceInstaller1.ServiceName = "InfoBaseListService";
-            this.serviceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
+            this.serviceInstaller1.StartType = ServiceStartMode.Automatic;
             // 
             // ProjectInstaller
             // 
-            this.Installers.AddRange(new System.Configuration.Install.Installer[] {
+            this.Installers.AddRange(new Installer[] {
             this.serviceProcessInstaller1,
             this.serviceInstaller1});
 
@@ -53,7 +57,7 @@
 
         #endregion
 
-        private System.ServiceProcess.ServiceProcessInstaller serviceProcessInstaller1;
-        private System.ServiceProcess.ServiceInstaller serviceInstaller1;
+        private ServiceProcessInstaller serviceProcessInstaller1;
+        private ServiceInstaller serviceInstaller1;
     }
 }

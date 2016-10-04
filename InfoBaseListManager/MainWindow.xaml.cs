@@ -1,25 +1,29 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.ComponentModel;
-using System.Collections.ObjectModel;
+using System.Windows.Input;
+using InfoBaseListDataClasses;
 using InfoBaseListUDPServerNamespace;
+using Microsoft.VisualBasic;
 
 namespace InfoBaseListManager
 {
     /// <summary>
     /// Логика взаимодействия для MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
-        private ObservableCollection<Computer> comps;
-        private ICollectionView cvComps;
-        private ICollectionView cvUsers;
-        private ICollectionView cvInfoBases;
+        private ObservableCollection<Computer> _comps;
+        private ICollectionView _cvComps;
+        private ICollectionView _cvUsers;
+        private ICollectionView _cvInfoBases;
 
-        private ICollectionView cvInfoBaseCollections;
-        private ICollectionView cvStoredInfoBases;
+        private ICollectionView _cvInfoBaseCollections;
+        private ICollectionView _cvStoredInfoBases;
 
         private InfoBaseListUdpServer _udpServer;
         private BackgroundTasks _backgroundTasks;        
@@ -34,11 +38,11 @@ namespace InfoBaseListManager
                 frmSettins.ShowDialog();
             }
 
-            if(Config.ConfigurationData.PoolList.Count == 0)
+            if(Config.ConfigurationData.PoolList == null 
+                || Config.ConfigurationData.PoolList.Count == 0)
             {
-                var pool = new Pool();
-                pool.Name = "Организация";
-                Config.ConfigurationData.PoolList.Add(pool);
+                var pool = new Pool {Name = "Организация"};
+                Config.ConfigurationData.PoolList = new List<Pool> {pool};
                 Config.ConfigurationData.CurrentPool = pool;
             }
             
@@ -75,22 +79,22 @@ namespace InfoBaseListManager
             _udpServer = new InfoBaseListUdpServer();
             _udpServer.Start(Config.ConfigurationData.Port, Config.ConfigurationData.CurrentPool.Name);
 
-            comps = new ObservableCollection<Computer>();
+            _comps = new ObservableCollection<Computer>();
 
-            cvComps = CollectionViewSource.GetDefaultView(comps);
-            cvComps.SortDescriptions.Add(new SortDescription(null, ListSortDirection.Ascending));
-            lbComps.ItemsSource = cvComps;
+            _cvComps = CollectionViewSource.GetDefaultView(_comps);
+            _cvComps.SortDescriptions.Add(new SortDescription(null, ListSortDirection.Ascending));
+            lbComps.ItemsSource = _cvComps;
 
-            cvInfoBaseCollections = CollectionViewSource.GetDefaultView(Config.ConfigurationData.CurrentPool.InfoBaseCollectionList);
-            cvInfoBaseCollections.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
-            lbInfoBaseCollections.ItemsSource = cvInfoBaseCollections;
+            _cvInfoBaseCollections = CollectionViewSource.GetDefaultView(Config.ConfigurationData.CurrentPool.InfoBaseCollectionList);
+            _cvInfoBaseCollections.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+            lbInfoBaseCollections.ItemsSource = _cvInfoBaseCollections;
             
             lbUsers.ItemsSource = null;
             tvInfobases.ItemsSource = null;
 
             if (_backgroundTasks != null)
                 _backgroundTasks.Stop();
-            _backgroundTasks = new BackgroundTasks(_udpServer, comps, cvComps);
+            _backgroundTasks = new BackgroundTasks(_udpServer, _comps, _cvComps);
             _backgroundTasks.Start();
 
             
@@ -118,9 +122,9 @@ namespace InfoBaseListManager
             
             selComp.QueryUsers(_udpServer);
 
-            cvUsers = CollectionViewSource.GetDefaultView(selComp.Users);
-            cvUsers.SortDescriptions.Add(new SortDescription(null, ListSortDirection.Ascending));            
-            lbUsers.ItemsSource = cvUsers;
+            _cvUsers = CollectionViewSource.GetDefaultView(selComp.Users);
+            _cvUsers.SortDescriptions.Add(new SortDescription(null, ListSortDirection.Ascending));            
+            lbUsers.ItemsSource = _cvUsers;
             
             lbUsers_SelectionChanged(sender, e);
         }
@@ -138,19 +142,20 @@ namespace InfoBaseListManager
 
             selUser.QueryInfoBases(_udpServer);
 
-            cvInfoBases = CollectionViewSource.GetDefaultView(selUser.InfoBaseTree.ChildInfoBases);
-            cvInfoBases.SortDescriptions.Add(new SortDescription("InfoBaseName", ListSortDirection.Ascending));            
-            tvInfobases.ItemsSource = cvInfoBases;
+            _cvInfoBases = CollectionViewSource.GetDefaultView(selUser.InfoBaseTree.ChildInfoBases);
+            _cvInfoBases.SortDescriptions.Add(new SortDescription("InfoBaseName", ListSortDirection.Ascending));            
+            tvInfobases.ItemsSource = _cvInfoBases;
         }
 
-        private bool EditInfoBase(InfoBaseListDataClasses.InfoBase ib)
+        private bool EditInfoBase(InfoBase ib)
         {
-            var ibCopy = new InfoBaseListDataClasses.InfoBase(ib);
+            var ibCopy = new InfoBase(ib);
             InfoBaseForm ibForm = new InfoBaseForm{ InfoBase = ibCopy};
 
-            if((bool)ibForm.ShowDialog())
+            var showDialog = ibForm.ShowDialog();
+            if(showDialog != null && (bool)showDialog)
             {
-                var typeInfoBase = typeof(InfoBaseListDataClasses.InfoBase);
+                var typeInfoBase = typeof(InfoBase);
                 var typeInfoBaseFields = typeInfoBase.GetProperties();
 
                 foreach (var typeInfoBaseField in typeInfoBaseFields)
@@ -164,7 +169,7 @@ namespace InfoBaseListManager
             return false;
         }
 
-        private void tvInfobases_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void tvInfobases_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var selInfoBaseTree = (tvInfobases.SelectedItem as InfoBaseTree);
 
@@ -175,7 +180,7 @@ namespace InfoBaseListManager
 
             EditInfoBase(selInfoBase);
             SaveInfoBases();
-            cvInfoBases.Refresh();
+            _cvInfoBases.Refresh();
         }
         
         
@@ -189,15 +194,17 @@ namespace InfoBaseListManager
             if (selUser == null)
             {
                 return;
-            }  
+            }
 
-            var ib = new InfoBaseListDataClasses.InfoBase();
-            ib.InfobaseName = "Информационная база";
-            ib.Connect = "Srvr=\"\";Ref=\"\";";
-            ib.App = "Auto";
-            ib.Version = "8.3";
-            ib.Folder = "/";
-            ib.WA = "1";
+            var ib = new InfoBase
+            {
+                InfobaseName = "Информационная база",
+                Connect = "Srvr=\"\";Ref=\"\";",
+                App = "Auto",
+                Version = "8.3",
+                Folder = "/",
+                WA = "1"
+            };
 
             var ibt = new InfoBaseTree(ib, selUser.InfoBaseTree);
 
@@ -206,7 +213,7 @@ namespace InfoBaseListManager
             if(EditInfoBase(ib))
             {
                 SaveInfoBases();
-                cvInfoBases.Refresh();
+                _cvInfoBases.Refresh();
             } else
             {
                 selUser.InfoBaseTree.ChildInfoBases.Remove(ibt);
@@ -232,8 +239,8 @@ namespace InfoBaseListManager
 
         private void EditCollectionName(InfoBaseCollection ibc)
         {
-            ibc.Name = Microsoft.VisualBasic.Interaction.InputBox("Введите название списка:", "Список " + ibc.Name, ibc.Name);
-            cvInfoBaseCollections.Refresh();
+            ibc.Name = Interaction.InputBox("Введите название списка:", "Список " + ibc.Name, ibc.Name);
+            _cvInfoBaseCollections.Refresh();
             Config.ConfigurationData.Save();
         }
 
@@ -248,13 +255,13 @@ namespace InfoBaseListManager
             }
 
 
-            cvStoredInfoBases = CollectionViewSource.GetDefaultView(selInfoBaseCollection.InfoBaseList);
-            cvStoredInfoBases.SortDescriptions.Add(new SortDescription("InfobaseName", ListSortDirection.Ascending));
-            lbStoredInfoBases.ItemsSource = cvStoredInfoBases;
+            _cvStoredInfoBases = CollectionViewSource.GetDefaultView(selInfoBaseCollection.InfoBaseList);
+            _cvStoredInfoBases.SortDescriptions.Add(new SortDescription("InfobaseName", ListSortDirection.Ascending));
+            lbStoredInfoBases.ItemsSource = _cvStoredInfoBases;
 
         }
 
-        private void lbInfoBaseCollections_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void lbInfoBaseCollections_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var selInfoBaseCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
 
@@ -266,8 +273,7 @@ namespace InfoBaseListManager
 
         private void btnAddCollection_Click(object sender, RoutedEventArgs e)
         {
-            var newCollection = new InfoBaseCollection();
-            newCollection.Name = "Новый список";
+            var newCollection = new InfoBaseCollection {Name = "Новый список"};
 
             Config.ConfigurationData.CurrentPool.InfoBaseCollectionList.Add(newCollection);
 
@@ -296,13 +302,15 @@ namespace InfoBaseListManager
             if (selInfoBaseCollection == null)
                 return;
 
-            var ib = new InfoBaseListDataClasses.InfoBase();
-            ib.InfobaseName = "Информационная база";
-            ib.Connect = "Srvr=\"\";Ref=\"\";";
-            ib.App = "Auto";
-            ib.Version = "8.3";
-            ib.Folder = "/";
-            ib.WA = "1";
+            var ib = new InfoBase
+            {
+                InfobaseName = "Информационная база",
+                Connect = "Srvr=\"\";Ref=\"\";",
+                App = "Auto",
+                Version = "8.3",
+                Folder = "/",
+                WA = "1"
+            };
 
             selInfoBaseCollection.InfoBaseList.Add(ib);
             
@@ -310,7 +318,7 @@ namespace InfoBaseListManager
             if (EditInfoBase(ib))
             {
                 Config.ConfigurationData.Save();
-                cvStoredInfoBases.Refresh();
+                _cvStoredInfoBases.Refresh();
             } else
             {
                 selInfoBaseCollection.InfoBaseList.Remove(ib);
@@ -319,7 +327,7 @@ namespace InfoBaseListManager
 
         private void btnRemoveStoredInfoBase_Click(object sender, RoutedEventArgs e)
         {
-            var selStoredInfoBase = (lbStoredInfoBases.SelectedItem as InfoBaseListDataClasses.InfoBase);
+            var selStoredInfoBase = (lbStoredInfoBases.SelectedItem as InfoBase);
 
             if (selStoredInfoBase == null)
                 return;
@@ -331,16 +339,16 @@ namespace InfoBaseListManager
 
             selInfoBaseCollection.InfoBaseList.Remove(selStoredInfoBase);
             Config.ConfigurationData.Save();
-            cvStoredInfoBases.Refresh();
+            _cvStoredInfoBases.Refresh();
 
         }
 
 
         #endregion
 
-        private void lbStoredInfoBases_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void lbStoredInfoBases_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var selStoredInfoBase = (lbStoredInfoBases.SelectedItem as InfoBaseListDataClasses.InfoBase);
+            var selStoredInfoBase = (lbStoredInfoBases.SelectedItem as InfoBase);
 
             if (selStoredInfoBase == null)
                 return;
@@ -348,17 +356,98 @@ namespace InfoBaseListManager
             if (EditInfoBase(selStoredInfoBase))
             {
                 Config.ConfigurationData.Save();
-                cvStoredInfoBases.Refresh();
+                _cvStoredInfoBases.Refresh();
             }            
 
         }
-
-        private void Label_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        
+        private void lbStoredInfoBases_Label_MouseMove(object sender, MouseEventArgs e)
         {
-            //if (((System.Windows.Controls.Label)sender).DataContext != lbStoredInfoBases.SelectedItem)
-            //    return;
-            DragDrop.DoDragDrop(lbStoredInfoBases, ((System.Windows.Controls.Label)sender).DataContext, DragDropEffects.Move);
+            if(e.LeftButton == MouseButtonState.Pressed)
+                DragDrop.DoDragDrop(lbStoredInfoBases, ((Label)sender).DataContext, DragDropEffects.Move);
         }
+
+        private void TextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var ibt = ((TextBlock)sender).DataContext as InfoBaseTree;
+
+            if(ibt == null)
+                return;
+
+            var ib = ibt.InfoBase;
+
+            DragDrop.DoDragDrop(tvInfobases, ib, DragDropEffects.Move);
+        }
+
+        private void lbStoredInfoBases_DragOver(object sender, DragEventArgs e)
+        {
+            var selCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (e.Data.GetDataPresent(typeof(InfoBase)) && selCollection != null)
+                e.Effects = DragDropEffects.Move;
+            else
+                e.Effects = DragDropEffects.None;
+
+            e.Handled = true;
+        }
+
+        private void tvInfobases_DragOver(object sender, DragEventArgs e)
+        {
+            var selUser = (lbUsers.SelectedItem as User);
+
+            if (e.Data.GetDataPresent(typeof(InfoBase)) && selUser != null)
+                e.Effects = DragDropEffects.Move;
+            else
+                e.Effects = DragDropEffects.None;
+
+            e.Handled = true;
+        }
+
+        private void lbStoredInfoBases_Drop(object sender, DragEventArgs e)
+        {
+            var selCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (selCollection == null)
+                return;
+
+            var ib = e.Data.GetData(typeof(InfoBase)) as InfoBase;
+
+            if (ib == null)
+                return;
+
+            selCollection.InfoBaseList.Add(new InfoBase(ib));
+
+            Config.ConfigurationData.Save();
+            _cvStoredInfoBases.Refresh();
+        }
+
+        private void tvInfobases_Drop(object sender, DragEventArgs e)
+        {
+            var selUser = (lbUsers.SelectedItem as User);
+
+            if (selUser == null)
+                return;
+
+            var ib = e.Data.GetData(typeof(InfoBase)) as InfoBase;
+
+            if (ib == null)
+                return;
+
+            var ibt = new InfoBaseTree(new InfoBase(ib), selUser.InfoBaseTree);
+
+            selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
+
+            SaveInfoBases();
+            _cvInfoBases.Refresh(); 
+        }
+
+        
+
+        
+
+        
+
+
 
         
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Net.Mime;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
@@ -19,16 +19,18 @@ namespace InfoBaseListService
 
     class ComputerData
     {
-        private List<WindowsUser> windowsUsers;
+        private readonly List<WindowsUser> _windowsUsers;
 
+        // ReSharper disable once NotAccessedField.Local
         private Timer _getDataFromRegistryTimer;
 
         public ComputerData()
         {
-            windowsUsers = new List<WindowsUser>();
+            _windowsUsers = new List<WindowsUser>();
             _getDataFromRegistryTimer = new Timer(GetDataFromRegistry,null,0,60000);
         }
 
+        // ReSharper disable once InconsistentNaming
         private string GetUserNameBySID(string stringSid)
         {
             return new SecurityIdentifier(stringSid).Translate(typeof(NTAccount)).ToString();
@@ -41,6 +43,7 @@ namespace InfoBaseListService
 
             var rkprofiles = rhklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList");
 
+            Debug.Assert(rkprofiles != null, "rkprofiles != null");
             var profileslist = rkprofiles.GetSubKeyNames();
 
             foreach (var profileSID in profileslist)
@@ -48,7 +51,7 @@ namespace InfoBaseListService
                 if(profileSID.Length < 15)
                     continue;
 
-                var userName = "";
+                string userName;
 
                 try
                 {
@@ -61,7 +64,7 @@ namespace InfoBaseListService
 
                 WindowsUser currentUser = null;
 
-                foreach (var windowsUser in windowsUsers)
+                foreach (var windowsUser in _windowsUsers)
                 {
                     if (windowsUser.UserName == userName)
                     {
@@ -72,8 +75,7 @@ namespace InfoBaseListService
 
                 if (currentUser == null)
                 {
-                    currentUser = new WindowsUser();
-                    currentUser.UserName = userName;
+                    currentUser = new WindowsUser {UserName = userName};
                 }
                 else
                 {
@@ -124,6 +126,7 @@ namespace InfoBaseListService
 
                 }
 
+                Debug.Assert(rkuser != null, "rkuser != null");
                 var rkUserShellfolders = rkuser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders");
 
                 if(rkUserShellfolders == null)
@@ -137,7 +140,7 @@ namespace InfoBaseListService
                 if (File.Exists(currentUser.UserAppFolder + @"\1C\1CEStart\ibases.v8i"))
                     currentUser.UserInfoBasesFile = currentUser.UserAppFolder + @"\1C\1CEStart\ibases.v8i";
                 
-                windowsUsers.Add(currentUser);
+                _windowsUsers.Add(currentUser);
 
                 rkUserShellfolders.Close();
                 rkuser.Close();
@@ -150,20 +153,22 @@ namespace InfoBaseListService
                     }
                     catch (Exception)
                     {
-                        continue;
-                    }     
+                        // ignored
+                    }
                 }
             }
         }
 
         public DataUnitUserList GetUsers()
         {
-            var duUserList = new DataUnitUserList();
+            var duUserList = new DataUnitUserList
+            {
+                Query = DataQueries.UserListAnswer,
+                ComputerName = Environment.MachineName
+            };
 
-            duUserList.Query = DataQueries.UserListAnswer;
-            duUserList.ComputerName = Environment.MachineName;
 
-            foreach (var windowsUser in windowsUsers)
+            foreach (var windowsUser in _windowsUsers)
             {
                 duUserList.Users.Add(windowsUser.UserName);
             }
@@ -173,13 +178,15 @@ namespace InfoBaseListService
 
         public DataUnitUserInfoBaseList GetUserInfoBases(string userName)
         {
-            var duInfoBaseList = new DataUnitUserInfoBaseList();
+            var duInfoBaseList = new DataUnitUserInfoBaseList
+            {
+                ComputerName = Environment.MachineName,
+                Query = DataQueries.UserInfobaseListAnswer,
+                UserName = userName
+            };
 
-            duInfoBaseList.ComputerName = Environment.MachineName;
-            duInfoBaseList.Query = DataQueries.UserInfobaseListAnswer;
-            duInfoBaseList.UserName = userName;
             var userInfoBasesFile = "";
-            foreach (var windowsUser in windowsUsers)
+            foreach (var windowsUser in _windowsUsers)
             {
                 if (windowsUser.UserName == userName)
                 {
@@ -197,7 +204,7 @@ namespace InfoBaseListService
         public void SetUserInfoBases(string userName,List<InfoBase> infoBaseList)
         {
             var userInfoBasesFile = "";
-            foreach (var windowsUser in windowsUsers)
+            foreach (var windowsUser in _windowsUsers)
             {
                 if (windowsUser.UserName == userName)
                 {
@@ -252,7 +259,7 @@ namespace InfoBaseListService
             if(ibLinesList.Count == 0)
             {
                 ibLinesList.Add("[" + ib.InfobaseName + "]");
-            };
+            }
 
             foreach (var typeInfoBaseField in typeInfoBaseFields)
             {
@@ -278,7 +285,7 @@ namespace InfoBaseListService
                 {
                     ibLinesList.Add("");
                     foundIndex = ibLinesList.Count - 1;
-                }; 
+                } 
 
                 ibLinesList[foundIndex] = typeInfoBaseField.Name + "=" + (string)typeInfoBaseField.GetValue(ib, null);                
             }
@@ -342,7 +349,6 @@ namespace InfoBaseListService
                 {
                     fileLines = EditInfoBaseInFile(fileLines, ib);
                     edited = true;
-                    continue;
                 }
             }
 

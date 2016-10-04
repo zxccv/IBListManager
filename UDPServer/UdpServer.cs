@@ -5,18 +5,16 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
 using InfoBaseListDataClasses;
-
 
 namespace InfoBaseListUDPServerNamespace
 {
     public class UdpState
     {
-        public UdpClient u;
-        public IPEndPoint e;
+        public UdpClient U;
+        public IPEndPoint E;
     }
 
     public class ConnectedComputer
@@ -40,23 +38,21 @@ namespace InfoBaseListUDPServerNamespace
         public UdpClient UdpClient;
 
         public Dictionary<string, ConnectedComputer> ConnectedComputers;
-        private Queue _dataQueue;
         public Queue SyncDataQueue;
 
-        private Queue _sendQueue;
-        private Queue _syncSendQueue;
+        private readonly Queue _syncSendQueue;
 
-        private Timer _sendTimer;
-        private bool _sendTimerActive = false;
+        private readonly Timer _sendTimer;
+        private bool _sendTimerActive;
         
         public InfoBaseListUdpServer()
         {
             _workThread = new Thread(Work);
             ConnectedComputers = new Dictionary<string, ConnectedComputer>();
-            _dataQueue = new Queue();
-            SyncDataQueue = Queue.Synchronized(_dataQueue);
-            _sendQueue = new Queue();
-            _syncSendQueue = Queue.Synchronized(_sendQueue);
+            var dataQueue = new Queue();
+            SyncDataQueue = Queue.Synchronized(dataQueue);
+            var sendQueue = new Queue();
+            _syncSendQueue = Queue.Synchronized(sendQueue);
             _sendTimer = new Timer(SendDatagram);
         }
 
@@ -65,7 +61,8 @@ namespace InfoBaseListUDPServerNamespace
             if (_syncSendQueue.Count > 0)
             {
                 var datagram = _syncSendQueue.Dequeue() as Datagram;
-                UdpClient.Send(datagram.Data, datagram.Data.Count(), datagram.EP);
+                if (datagram != null) 
+                    UdpClient.Send(datagram.Data, datagram.Data.Count(), datagram.EP);
             }
             else
             {
@@ -110,8 +107,7 @@ namespace InfoBaseListUDPServerNamespace
         {
             var ep = new IPEndPoint(IPAddress.Any, 0);
 
-            UdpClient = new UdpClient(_port);
-            UdpClient.Client.ReceiveTimeout = 3000;
+            UdpClient = new UdpClient(_port) {Client = {ReceiveTimeout = 3000}};
 
             while (true)
             {
@@ -136,8 +132,7 @@ namespace InfoBaseListUDPServerNamespace
 
                     if (!ConnectedComputers.ContainsKey(computerName))
                     {
-                        var newConnectedComputer = new ConnectedComputer();
-                        newConnectedComputer.ComputerName = computerName;
+                        var newConnectedComputer = new ConnectedComputer {ComputerName = computerName};
                         ConnectedComputers.Add(computerName, newConnectedComputer);
                     }
                     ConnectedComputers[computerName].EndPoint = ep;
@@ -145,7 +140,10 @@ namespace InfoBaseListUDPServerNamespace
 
                     SyncDataQueue.Enqueue(newDataUnit);
                 }
-                catch (Exception) { };
+                catch (Exception)
+                {
+                    // ignored
+                }
             }
             
         }

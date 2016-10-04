@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Windows;
 using InfoBaseListDataClasses;
@@ -14,12 +11,12 @@ namespace InfoBaseListManager
 {
     class BackgroundTasks
     {
-        private InfoBaseListUdpServer _udpServer;
-        private ObservableCollection<Computer> _comps;
-        private ICollectionView _cvComps;
+        private readonly InfoBaseListUdpServer _udpServer;
+        private readonly ObservableCollection<Computer> _comps;
+        private readonly ICollectionView _cvComps;
                 
-        private Thread compsUpdateThread;
-        private Thread parseThread;
+        private Thread _compsUpdateThread;
+        private Thread _parseThread;
 
         public BackgroundTasks(InfoBaseListUdpServer udpServer, ObservableCollection<Computer> comps, ICollectionView cvComps)
         {
@@ -30,24 +27,24 @@ namespace InfoBaseListManager
 
         public void Start()
         {
-            compsUpdateThread = new Thread(UpdateCompsThread);
-            compsUpdateThread.Start();
-            parseThread = new Thread(ParseUdpServerQueueThread);
-            parseThread.Start();
+            _compsUpdateThread = new Thread(UpdateCompsThread);
+            _compsUpdateThread.Start();
+            _parseThread = new Thread(ParseUdpServerQueueThread);
+            _parseThread.Start();
         }
 
         public void Stop()
         {
-            if (compsUpdateThread.IsAlive)
+            if (_compsUpdateThread.IsAlive)
             { 
-                compsUpdateThread.Abort();
-                compsUpdateThread.Join();
+                _compsUpdateThread.Abort();
+                _compsUpdateThread.Join();
             }
 
-            if (parseThread.IsAlive)
+            if (_parseThread.IsAlive)
             { 
-                parseThread.Abort();
-                parseThread.Join();
+                _parseThread.Abort();
+                _parseThread.Join();
             }
         }
                
@@ -73,8 +70,7 @@ namespace InfoBaseListManager
                         }
                         else
                         {
-                            c = new Computer();
-                            c.ComputerName = connComp.Key;
+                            c = new Computer {ComputerName = connComp.Key};
                             var onl = !(connComp.Value.LastMessageTime + TimeSpan.FromSeconds(2) < dtNow);
                             c.IsOnline = onl;
                             Application.Current.Dispatcher.Invoke(new Action(() => _comps.Add(c)));
@@ -85,7 +81,11 @@ namespace InfoBaseListManager
 
                     Thread.Sleep(1000);
                 }
-                catch (Exception) { };
+                catch (Exception)
+                {
+                    // ignored
+                }
+                
             }
 
         }
@@ -117,9 +117,11 @@ namespace InfoBaseListManager
                     switch (duc.Query)
                     {
                         case DataQueries.UserListAnswer:
-                            comp.LoadUsers((duc as DataUnitUserList).Users);
+                            var dataUnitUserList = duc as DataUnitUserList;
+                            if (dataUnitUserList != null) comp.LoadUsers(dataUnitUserList.Users);
                             break;
                         case DataQueries.UserInfobaseListAnswer:
+                            // ReSharper disable once InconsistentNaming
                             var duIBList = duc as DataUnitUserInfoBaseList;
                             if (duIBList != null)
                             {
@@ -133,7 +135,11 @@ namespace InfoBaseListManager
                             break;
                     }
                 }
-                catch (Exception) { };
+                catch (Exception)
+                {
+                    // ignored
+                }
+                
 
             }
 

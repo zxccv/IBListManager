@@ -1,8 +1,7 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Controls;
-using InfoBaseListDataClasses;
 
 namespace InfoBaseListManager
 {
@@ -10,7 +9,7 @@ namespace InfoBaseListManager
     {
 
         public object Convert(object value, Type targetType, object parameter,
-          System.Globalization.CultureInfo culture)
+          CultureInfo culture)
         {
             if ((bool)value)
                 return new SolidColorBrush(Colors.Green);
@@ -19,7 +18,7 @@ namespace InfoBaseListManager
         }
 
         public object ConvertBack(object value, Type targetType, object parameter,
-          System.Globalization.CultureInfo culture)
+          CultureInfo culture)
         {
             throw new NotSupportedException();
         }

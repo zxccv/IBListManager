@@ -1,20 +1,14 @@
 ﻿using System;
-using System.IO;
-using System.Diagnostics;
-using Microsoft.Win32;
-using System.Text;
-using System.ServiceProcess;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.ServiceProcess;
+using Microsoft.Win32;
 
 namespace InfoBaseListServiceInstaller
 {
     class Program
     {
-        static void Install(string filename,string host,string port,string compname)
-        {
-
-        }
-
         static string InteractiveInstall(string result = "")
         {
             Console.Clear();
@@ -96,6 +90,7 @@ namespace InfoBaseListServiceInstaller
                 
                 try
                 {
+                    Debug.Assert(service != null, "service != null");
                     service.Start();
                     service.WaitForStatus(ServiceControllerStatus.Running, new TimeSpan(0, 0, 0, 0, 5000));
                     return "Служба успешно запущена";
@@ -112,6 +107,7 @@ namespace InfoBaseListServiceInstaller
 
                 try
                 {
+                    Debug.Assert(service != null, "service != null");
                     service.Stop();
                     service.WaitForStatus(ServiceControllerStatus.Stopped, new TimeSpan(0, 0, 0, 0, 5000));
                     service.Start();
@@ -131,6 +127,7 @@ namespace InfoBaseListServiceInstaller
 
                 try
                 {
+                    Debug.Assert(service != null, "service != null");
                     service.Stop();
                     service.WaitForStatus(ServiceControllerStatus.Stopped, new TimeSpan(0, 0, 0, 0, 5000));
                     return "Служба успешно остановлена";
@@ -232,9 +229,8 @@ namespace InfoBaseListServiceInstaller
                         Console.ReadKey();
                         return;
                     }
-                    var imagePath = rkiblist.GetValue("ImagePath");
-
-                    imagePath = Environment.CurrentDirectory + "\\InfoBaseListService.exe " + host + " " + port + " \"" + poolName + "\"";
+                    
+                    var imagePath = Environment.CurrentDirectory + "\\InfoBaseListService.exe " + host + " " + port + " \"" + poolName + "\"";
                     
                     
                     rkiblist.SetValue("ImagePath",imagePath);
