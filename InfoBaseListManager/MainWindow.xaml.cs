@@ -147,10 +147,15 @@ namespace InfoBaseListManager
             tvInfobases.ItemsSource = _cvInfoBases;
         }
 
-        private bool EditInfoBase(InfoBase ib)
+        private bool EditInfoBase(InfoBase ib, IEnumerable<InfoBase> ibListForSearch = null)
         {
             var ibCopy = new InfoBase(ib);
-            InfoBaseForm ibForm = new InfoBaseForm{ InfoBase = ibCopy};
+            InfoBaseForm ibForm = new InfoBaseForm
+            {
+                InfoBase = ibCopy, 
+                IBListForSearch = ibListForSearch,
+                SourceInfoBase = ib
+            };
 
             var showDialog = ibForm.ShowDialog();
             if(showDialog != null && (bool)showDialog)
@@ -171,6 +176,15 @@ namespace InfoBaseListManager
 
         private void tvInfobases_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            var selUser = (lbUsers.SelectedItem as User);
+
+            if (selUser == null)
+            {
+                return;
+            }
+
+            var userIBList = selUser.InfoBaseTree.GetInfoBaseList();
+
             var selInfoBaseTree = (tvInfobases.SelectedItem as InfoBaseTree);
 
             if (selInfoBaseTree == null)
@@ -178,14 +192,10 @@ namespace InfoBaseListManager
 
             var selInfoBase = selInfoBaseTree.InfoBase;
 
-            EditInfoBase(selInfoBase);
+            EditInfoBase(selInfoBase, userIBList);
             SaveInfoBases();
             _cvInfoBases.Refresh();
         }
-        
-        
-
-        
 
         private void btnAdd_Click(object sender, RoutedEventArgs e)
         {
@@ -207,16 +217,14 @@ namespace InfoBaseListManager
             };
 
             var ibt = new InfoBaseTree(ib, selUser.InfoBaseTree);
+            
+            var userIBList = selUser.InfoBaseTree.GetInfoBaseList();
 
-            selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
-                       
-            if(EditInfoBase(ib))
+            if (EditInfoBase(ib, userIBList))
             {
+                selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
                 SaveInfoBases();
                 _cvInfoBases.Refresh();
-            } else
-            {
-                selUser.InfoBaseTree.ChildInfoBases.Remove(ibt);
             }
         }
 
@@ -311,18 +319,13 @@ namespace InfoBaseListManager
                 Folder = "/",
                 WA = "1"
             };
-
-            selInfoBaseCollection.InfoBaseList.Add(ib);
             
-
-            if (EditInfoBase(ib))
+            if (EditInfoBase(ib,selInfoBaseCollection.InfoBaseList))
             {
+                selInfoBaseCollection.InfoBaseList.Add(ib);
                 Config.ConfigurationData.Save();
                 _cvStoredInfoBases.Refresh();
-            } else
-            {
-                selInfoBaseCollection.InfoBaseList.Remove(ib);
-            } 
+            }
         }
 
         private void btnRemoveStoredInfoBase_Click(object sender, RoutedEventArgs e)
@@ -343,44 +346,68 @@ namespace InfoBaseListManager
 
         }
 
-
-        #endregion
-
         private void lbStoredInfoBases_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            var selInfoBaseCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
+
+            if (selInfoBaseCollection == null)
+                return;
+
             var selStoredInfoBase = (lbStoredInfoBases.SelectedItem as InfoBase);
 
             if (selStoredInfoBase == null)
                 return;
 
-            if (EditInfoBase(selStoredInfoBase))
+            if (EditInfoBase(selStoredInfoBase, selInfoBaseCollection.InfoBaseList))
             {
                 Config.ConfigurationData.Save();
                 _cvStoredInfoBases.Refresh();
-            }            
+            }
 
         }
+
+        #endregion
+
+        
         
         private void lbStoredInfoBases_Label_MouseMove(object sender, MouseEventArgs e)
         {
-            if(e.LeftButton == MouseButtonState.Pressed)
-                DragDrop.DoDragDrop(lbStoredInfoBases, ((Label)sender).DataContext, DragDropEffects.Move);
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                var data = new DataObject(((TextBlock) sender).DataContext);
+                data.SetData("Sender", lbStoredInfoBases);
+                DragDrop.DoDragDrop(lbStoredInfoBases, data, DragDropEffects.Move);
+            }
         }
 
-        private void TextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        private void tvInfobases_TextBlock_MouseMove(object sender, MouseEventArgs e)
         {
-            var ibt = ((TextBlock)sender).DataContext as InfoBaseTree;
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                var ibt = ((TextBlock)sender).DataContext as InfoBaseTree;
 
-            if(ibt == null)
-                return;
+                if (ibt == null)
+                    return;
+                
+                var ib = ibt.InfoBase;
 
-            var ib = ibt.InfoBase;
+                var data = new DataObject(ib);
+                data.SetData("Sender",tvInfobases);
 
-            DragDrop.DoDragDrop(tvInfobases, ib, DragDropEffects.Move);
+                DragDrop.DoDragDrop(tvInfobases, data, DragDropEffects.Move);
+            }
         }
-
+        
         private void lbStoredInfoBases_DragOver(object sender, DragEventArgs e)
         {
+            var dataSender = e.Data.GetData("Sender");
+            if (ReferenceEquals(sender as ListBox, dataSender))
+            {
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
+                return;
+            }
+
             var selCollection = (lbInfoBaseCollections.SelectedItem as InfoBaseCollection);
 
             if (e.Data.GetDataPresent(typeof(InfoBase)) && selCollection != null)
@@ -393,6 +420,14 @@ namespace InfoBaseListManager
 
         private void tvInfobases_DragOver(object sender, DragEventArgs e)
         {
+            var dataSender = e.Data.GetData("Sender");
+            if (ReferenceEquals(sender as TreeView, dataSender))
+            {
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
+                return;
+            }
+
             var selUser = (lbUsers.SelectedItem as User);
 
             if (e.Data.GetDataPresent(typeof(InfoBase)) && selUser != null)
@@ -415,6 +450,19 @@ namespace InfoBaseListManager
             if (ib == null)
                 return;
 
+            if (ib.Connect == null || ib.Connect.Equals(""))
+                return;
+
+            foreach (var ibInCollection in selCollection.InfoBaseList)
+            {
+                if (ibInCollection.InfobaseName.Equals(ib.InfobaseName, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    MessageBox.Show("Информационная база с таким наименованием уже существует", "Неверное имя базы",
+                            MessageBoxButton.OK);
+                    return;
+                }
+            }
+
             selCollection.InfoBaseList.Add(new InfoBase(ib));
 
             Config.ConfigurationData.Save();
@@ -433,6 +481,21 @@ namespace InfoBaseListManager
             if (ib == null)
                 return;
 
+            if (ib.Connect == null || ib.Connect.Equals(""))
+                return;
+
+            var userInfoBases = selUser.InfoBaseTree.GetInfoBaseList();
+
+            foreach (var ibInCollection in userInfoBases)
+            {
+                if (ibInCollection.InfobaseName.Equals(ib.InfobaseName, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    MessageBox.Show("Информационная база с таким наименованием уже существует", "Неверное имя базы",
+                            MessageBoxButton.OK);
+                    return;
+                }
+            }
+
             var ibt = new InfoBaseTree(new InfoBase(ib), selUser.InfoBaseTree);
 
             selUser.InfoBaseTree.ChildInfoBases.Add(ibt);
@@ -441,20 +504,7 @@ namespace InfoBaseListManager
             _cvInfoBases.Refresh(); 
         }
 
-        
 
         
-
-        
-
-
-
-        
-
-
-
-
-
-
     }
 }

@@ -27,7 +27,15 @@ namespace InfoBaseListManager
             Folder = folder;            
         }
 
-        public void FillInfoBaseListRecursive(List<InfoBase> ibList)
+        public List<InfoBase> GetInfoBaseList()
+        {
+            var ibList = new List<InfoBase>();
+            FillInfoBaseListRecursive(ibList);
+
+            return ibList;
+        }
+
+        private void FillInfoBaseListRecursive(List<InfoBase> ibList)
         {
             if (InfoBase.InfobaseName != "/")
             {
@@ -196,9 +204,7 @@ namespace InfoBaseListManager
 
         public void PushInfoBases(InfoBaseListUdpServer udpServer)
         {
-            List<InfoBase> infoBaseList = new List<InfoBase>();
-
-            InfoBaseTree.FillInfoBaseListRecursive(infoBaseList);
+            var infoBaseList = InfoBaseTree.GetInfoBaseList();
 
             DataUnitUserInfoBaseList duc = new DataUnitUserInfoBaseList
             {

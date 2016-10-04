@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Менеджер информационных баз" Height="500" Width="800"
-        xmlns:local="clr-namespace:InfoBaseListManager" Closed="Window_Closed" Closing="Window_Closing">
+        xmlns:local="clr-namespace:InfoBaseListManager" Closed="Window_Closed" Closing="Window_Closing" Icon="Resources/fav.ico">
 
     <Window.Resources>
         <local:LastTimeToBrushConverter x:Key="LastTimeToBrushConverter"/>        
@@ -81,10 +81,10 @@
 
             <Label>Информационные базы:</Label>
 
-            <TreeView Grid.Row="1" Grid.Column="0" Name="tvInfobases" MouseDoubleClick="tvInfobases_MouseDoubleClick" AllowDrop="True" Drop="tvInfobases_Drop" DragOver="tvInfobases_DragOver">
+            <TreeView Grid.Row="1" Grid.Column="0" Name="tvInfobases" MouseDoubleClick="tvInfobases_MouseDoubleClick" AllowDrop="True" Drop="tvInfobases_Drop" DragOver="tvInfobases_DragOver" DragLeave="tvInfobases_DragOver" DragEnter="tvInfobases_DragOver">
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Path=ChildInfoBases}">
-                        <TextBlock Text="{Binding Path=IBText}" FontWeight="Bold" MouseDown="TextBlock_MouseDown"/>
+                        <TextBlock Text="{Binding Path=IBText}" FontWeight="Bold" MouseMove="tvInfobases_TextBlock_MouseMove"/>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
@@ -154,14 +154,14 @@
                 </Button>
             </ToolBarPanel>
 
-            <ListBox Grid.Row="2" Name="lbStoredInfoBases" SelectionMode="Single" MouseDoubleClick="lbStoredInfoBases_MouseDoubleClick" Drop="lbStoredInfoBases_Drop" AllowDrop="True" DragOver="lbStoredInfoBases_DragOver">
+            <ListBox Grid.Row="2" Name="lbStoredInfoBases" SelectionMode="Single" MouseDoubleClick="lbStoredInfoBases_MouseDoubleClick" Drop="lbStoredInfoBases_Drop" AllowDrop="True" DragOver="lbStoredInfoBases_DragOver" DragEnter="lbStoredInfoBases_DragOver" DragLeave="lbStoredInfoBases_DragOver">
                 <ListBox.Resources>
                     <SolidColorBrush Color="LightGray" x:Key ="{x:Static SystemColors.HighlightBrushKey}">
                     </SolidColorBrush>
                 </ListBox.Resources>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Label MouseMove="lbStoredInfoBases_Label_MouseMove"  Content="{Binding Path=InfobaseName}"/>
+                        <TextBlock Margin="2" MouseMove="lbStoredInfoBases_Label_MouseMove"  Text="{Binding Path=InfobaseName}"/>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
